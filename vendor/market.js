@@ -808,7 +808,9 @@
     updateBanner(payload);
     lastMissingFiles = new Set(payload.missingFiles ?? []);
     lastSymbols = payload.symbols ?? [];
-    renderSymbols(lastSymbols, lastSelectedFolder ? null : payload.selectedFile);
+    const states = new Map();
+    if (fileTree) collectExpandStates(fileTree, states);
+    renderSymbols(lastSymbols, lastSelectedFolder ? null : payload.selectedFile, states);
     const selectedFile = payload.selectedFile;
     const selectedCandles =
       payload.candles?.[selectedFile] ?? candlesByFile.get(selectedFile);
