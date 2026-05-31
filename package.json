@@ -1,0 +1,47 @@
+{
+  "name": "k-files",
+  "version": "0.1.0",
+  "description": "CLI tool that visualizes file edits as stock-market-style K-line candlestick charts",
+  "main": "./dist/cli.js",
+  "bin": {
+    "k-files": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "static/",
+    "vendor/",
+    "src/hooks/"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "sync-vendor": "node scripts/sync-vendor.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "kfiles",
+    "k-line",
+    "candlestick",
+    "file-monitor",
+    "ai-agent",
+    "visualization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adampan0527/k-files.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^4.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

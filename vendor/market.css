@@ -1,0 +1,310 @@
+/* K 线/成交量：--kfiles-up/down（随明暗变化）；列表箭头：--kfiles-arrow-*（始终亮色） */
+:root,
+[data-color-scheme="cn"][data-color-tone="light"],
+[data-color-scheme="cn"]:not([data-color-tone]) {
+  --kfiles-up: #e53935;
+  --kfiles-down: #43a047;
+  --kfiles-up-rgb: 229, 57, 53;
+  --kfiles-down-rgb: 67, 160, 71;
+}
+
+[data-color-scheme="cn"] {
+  --kfiles-arrow-up: #e53935;
+  --kfiles-arrow-down: #43a047;
+}
+
+[data-color-scheme="us"][data-color-tone="light"],
+[data-color-scheme="us"]:not([data-color-tone]) {
+  --kfiles-up: #43a047;
+  --kfiles-down: #e53935;
+  --kfiles-up-rgb: 67, 160, 71;
+  --kfiles-down-rgb: 229, 57, 53;
+}
+
+[data-color-scheme="us"] {
+  --kfiles-arrow-up: #43a047;
+  --kfiles-arrow-down: #e53935;
+}
+
+[data-color-scheme="cn"][data-color-tone="dark"] {
+  --kfiles-up: #a32e2e;
+  --kfiles-down: #2f7040;
+  --kfiles-up-rgb: 163, 46, 46;
+  --kfiles-down-rgb: 47, 112, 64;
+}
+
+[data-color-scheme="us"][data-color-tone="dark"] {
+  --kfiles-up: #2f7040;
+  --kfiles-down: #a32e2e;
+  --kfiles-up-rgb: 47, 112, 64;
+  --kfiles-down-rgb: 163, 46, 46;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBar-background);
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.banner {
+  padding: 6px 10px;
+  font-size: 11px;
+  background: var(--vscode-inputValidation-warningBackground);
+  border-bottom: 1px solid var(--vscode-inputValidation-warningBorder);
+}
+
+.chart-error {
+  margin: 4px 12px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--vscode-errorForeground);
+  background: var(--vscode-inputValidation-errorBackground);
+  border-radius: 4px;
+}
+
+.layout {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 38%;
+  min-width: 110px;
+  max-width: 200px;
+  border-right: 1px solid var(--vscode-panel-border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 8px 10px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground);
+}
+
+.symbol-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.symbol-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px 6px 6px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.symbol-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.trend-arrow {
+  flex-shrink: 0;
+  width: 14px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 700;
+  text-align: center;
+}
+
+.trend-arrow.trend-up {
+  color: var(--kfiles-arrow-up, var(--kfiles-up));
+}
+
+.trend-arrow.trend-down {
+  color: var(--kfiles-arrow-down, var(--kfiles-down));
+}
+
+.trend-arrow.trend-flat,
+.trend-arrow.trend-none {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 400;
+}
+
+.symbol-list li:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.symbol-list li.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.symbol-list li.ipo,
+.symbol-list li.recent-edit {
+  border-left-color: var(--kfiles-up);
+}
+
+.symbol-list li.delisted {
+  opacity: 0.55;
+  border-left-color: var(--vscode-descriptionForeground);
+}
+
+.symbol-list li.delisted .symbol-name,
+.symbol-list li.delisted .symbol-meta,
+.symbol-list li.delisted .trend-arrow {
+  color: var(--vscode-descriptionForeground);
+}
+
+.symbol-list li.delisted:hover {
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+
+.symbol-list li.delisted.active {
+  opacity: 0.7;
+}
+
+.symbol-name {
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.symbol-meta {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.badge-activity {
+  font-size: 9px;
+  padding: 0 4px;
+  margin-left: 4px;
+  background: var(--kfiles-up);
+  color: #fff;
+  border-radius: 2px;
+  vertical-align: 1px;
+}
+
+.badge-delisted {
+  background: var(--vscode-descriptionForeground);
+  color: var(--vscode-editor-background);
+  font-weight: 600;
+}
+
+.empty-hint {
+  padding: 10px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.chart-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--vscode-editor-background);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.chart-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-title {
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.scheme-switch {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.scheme-btn {
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: inherit;
+  border: none;
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: pointer;
+}
+
+.scheme-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.scheme-btn.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.chart-legend {
+  padding: 2px 12px 4px;
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.ohlc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 12px 6px;
+  font-size: 10px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.ohlc-item em {
+  font-style: normal;
+  color: var(--vscode-descriptionForeground);
+  margin-right: 3px;
+}
+
+.ohlc-up strong {
+  color: var(--kfiles-up);
+}
+
+.ohlc-down strong {
+  color: var(--kfiles-down);
+}
+
+#chart-container {
+  flex: 1;
+  min-height: 160px;
+  width: 100%;
+}
