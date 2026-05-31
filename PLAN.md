@@ -7,7 +7,7 @@
 ```
 $ npx k-files
 ✔ Watching /home/user/my-project (127 files)
-✔ Server running at http://localhost:3579
+✔ Server running at http://localhost:13579
 ✔ Browser opened
 ```
 
@@ -28,7 +28,7 @@ $ npx k-files
  |    <script> cli-bridge.js     ← ~25行，acquireVsCodeApi → WebSocket   |
  |    <script> market.js         ← 原样 serve，不改一行                   |
  ============================  WebSocket  ================================
-         ↕  ws://localhost:3579/ws  (JSON)
+         ↕  ws://localhost:13579/ws  (JSON)
  =============================  SERVER  ==================================
  |  cli.ts           入口：解析参数 → 启动 watcher + server               |
  |  server.ts        http.createServer, 6 条静态路由 + WS upgrade         |
@@ -169,7 +169,7 @@ k-files/
   - 附加 `hooksOk`、`captureOnSave`、`kfilesDir`、`colorScheme`、`colorTone` 等元数据
 - [ ] 4.6 创建 `src/server.ts`：
   - `http.createServer` + 6 条路由 + WebSocket upgrade（`ws` 包的 `WebSocketServer`）
-  - 端口策略：默认 3579 → 被占用则随机端口 → 打印实际 URL
+  - 端口策略：默认 13579 → 被占用则随机端口 → 打印实际 URL
 - [ ] 4.7 更新 `src/cli.ts`：
   - 启动 watcher → 启动 server → 自动打开浏览器（`start`/`open`/`xdg-open`）
   - watcher `dataChanged` 事件 → `payloadBuilder.loadPayload()` → `wsHub.broadcast()`

@@ -17,7 +17,7 @@ cd my-project
 k-files
 ```
 
-This starts a local web server at `http://localhost:3579` and opens your browser. Every file change is reflected in the K-line chart within ~200ms.
+This starts a local web server at `http://localhost:13579` and opens your browser. Every file change is reflected in the K-line chart within ~200ms.
 
 ## Features
 
@@ -39,7 +39,7 @@ Start the file watcher and web server.
 k-files [options]
 
 Options:
-  -p, --port <number>   Port for the web server (default: 3579)
+  -p, --port <number>   Port for the web server (default: 13579)
   -d, --dir <path>      Workspace root directory (default: cwd)
   --no-open             Do not auto-open the browser
   -h, --help            Show help
@@ -104,7 +104,7 @@ All data is stored in the `.kfiles/` directory:
 ### Architecture
 
 ```
-Browser (localhost:3579)
+Browser (localhost:13579)
   ├── cli-fallbacks.css    ← CSS variable defaults (Dark+ theme)
   ├── market.css           ← Original KFiles styles (unchanged)
   ├── lightweight-charts.js ← TradingView charting library

@@ -9,7 +9,7 @@
  *   install-hooks       Install Claude Code hooks only
  *
  * Options:
- *   -p, --port <number>   Port for the web server (default: 3579)
+ *   -p, --port <number>   Port for the web server (default: 13579)
  *   -d, --dir <path>      Workspace root directory (default: cwd)
  *   --no-open             Do not auto-open the browser
  *   -h, --help            Show this help message
@@ -66,14 +66,14 @@ Commands:
   install-hooks       Install Claude Code hooks only
 
 Options:
-  -p, --port <number>   Port for the web server (default: 3579)
+  -p, --port <number>   Port for the web server (default: 13579)
   -d, --dir <path>      Workspace root directory (default: cwd)
   --no-open             Do not auto-open the browser
   -h, --help            Show this help message
   --version             Show version number
 
 Examples:
-  k-files                         Start watching current directory on port 3579
+  k-files                         Start watching current directory on port 13579
   k-files init                    Initialize project with hooks and config
   k-files install-hooks           Install Claude Code hooks only
   k-files -p 8080                 Start on port 8080
@@ -84,7 +84,7 @@ Examples:
 
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
-    port: 3579,
+    port: 13579,
     dir: process.cwd(),
     open: true,
     help: false,

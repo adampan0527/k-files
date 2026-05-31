@@ -17,7 +17,7 @@ cd my-project
 k-files
 ```
 
-这会在 `http://localhost:3579` 启动一个本地 Web 服务并自动打开浏览器。每次文件修改会在 ~200ms 内反映到 K 线图上。
+这会在 `http://localhost:13579` 启动一个本地 Web 服务并自动打开浏览器。每次文件修改会在 ~200ms 内反映到 K 线图上。
 
 ## 功能特性
 
@@ -39,7 +39,7 @@ k-files
 k-files [选项]
 
 选项:
-  -p, --port <number>   Web 服务端口（默认: 3579）
+  -p, --port <number>   Web 服务端口（默认: 13579）
   -d, --dir <path>      工作区根目录（默认: 当前目录）
   --no-open             不自动打开浏览器
   -h, --help            显示帮助
@@ -104,7 +104,7 @@ k-files 使用分层策略捕获文件修改：
 ### 架构总览
 
 ```
-浏览器 (localhost:3579)
+浏览器 (localhost:13579)
   ├── cli-fallbacks.css    ← CSS 变量默认值（Dark+ 主题）
   ├── market.css           ← 原始 KFiles 样式（不修改）
   ├── lightweight-charts.js ← TradingView 图表库
