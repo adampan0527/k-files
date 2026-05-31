@@ -57,9 +57,9 @@ interface CliOptions {
 
 function printHelp(): void {
   console.log(`
-k-files v${VERSION} — K-line file edit visualization
+kfiles v${VERSION} — K-line file edit visualization
 
-Usage: k-files [command] [options]
+Usage: kfiles [command] [options]
 
 Commands:
   init                Create .kfiles/config.json and install Claude Code hooks
@@ -73,12 +73,12 @@ Options:
   --version             Show version number
 
 Examples:
-  k-files                         Start watching current directory on port 13579
-  k-files init                    Initialize project with hooks and config
-  k-files install-hooks           Install Claude Code hooks only
-  k-files -p 8080                 Start on port 8080
-  k-files -d /path/to/project     Watch a specific directory
-  k-files --no-open               Start server without opening browser
+  kfiles                         Start watching current directory on port 13579
+  kfiles init                    Initialize project with hooks and config
+  kfiles install-hooks           Install Claude Code hooks only
+  kfiles -p 8080                 Start on port 8080
+  kfiles -d /path/to/project     Watch a specific directory
+  kfiles --no-open               Start server without opening browser
 `);
 }
 
@@ -237,7 +237,7 @@ function initCommand(workspaceRoot: string): void {
   }
 
   console.log("\n[k-files] Initialization complete!");
-  console.log("  Run 'k-files' to start watching and open the dashboard.");
+  console.log("  Run 'kfiles' to start watching and open the dashboard.");
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +253,7 @@ async function main(): Promise<void> {
   }
 
   if (opts.version) {
-    console.log(`k-files v${VERSION}`);
+    console.log(`kfiles v${VERSION}`);
     process.exit(0);
   }
 

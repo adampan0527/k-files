@@ -107,6 +107,7 @@ function generateHtml(version: string): string {
         <span class="ohlc-item"><em>L</em><strong id="ohlc-low">--</strong></span>
         <span class="ohlc-item"><em>C</em><strong id="ohlc-close">--</strong></span>
         <span class="ohlc-item"><em>Vol</em><strong id="ohlc-volume">--</strong></span>
+        <span class="ohlc-item ohlc-file-item" id="ohlc-file" style="display:none"></span>
       </div>
       <div id="chart-error" class="chart-error hidden"></div>
       <div id="chart-container"></div>

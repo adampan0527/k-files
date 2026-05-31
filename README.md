@@ -181,4 +181,4 @@ Both projects use the same `.kfiles/` data format, so they are fully interoperab
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)

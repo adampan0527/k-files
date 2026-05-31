@@ -75,6 +75,7 @@
     ohlcLow: document.getElementById("ohlc-low"),
     ohlcClose: document.getElementById("ohlc-close"),
     ohlcVolume: document.getElementById("ohlc-volume"),
+    ohlcFile: document.getElementById("ohlc-file"),
   };
 
   function formatNet(n) {
@@ -400,6 +401,7 @@
         volume: c.volume,
         is_ipo: c.is_ipo,
         leg: c.leg,
+        file: c.file,
         raw: c,
       });
     });
@@ -430,6 +432,10 @@
         }
       );
       setCloseTrendClass(0, 0);
+      if (els.ohlcFile) {
+        els.ohlcFile.textContent = "";
+        els.ohlcFile.style.display = "none";
+      }
       return;
     }
     const c = meta.raw;
@@ -445,6 +451,14 @@
     els.ohlcClose.textContent = String(c.close);
     els.ohlcVolume.textContent = String(meta.volume);
     setCloseTrendClass(c.open, c.close);
+
+    if (els.ohlcFile && lastSelectedFolder && meta.file) {
+      els.ohlcFile.textContent = meta.file;
+      els.ohlcFile.style.display = "";
+    } else if (els.ohlcFile) {
+      els.ohlcFile.textContent = "";
+      els.ohlcFile.style.display = "none";
+    }
   }
 
   function resizeChart() {

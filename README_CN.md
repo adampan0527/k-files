@@ -181,4 +181,4 @@ k-files 是 [KAgent](../KAgent) 的独立 CLI 提取版本 —— KAgent 是一�
 
 ## 许可证
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)

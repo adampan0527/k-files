@@ -4,7 +4,7 @@
   "description": "CLI tool that visualizes file edits as stock-market-style K-line candlestick charts",
   "main": "./dist/cli.js",
   "bin": {
-    "k-files": "./dist/cli.js"
+    "kfiles": "./dist/cli.js"
   },
   "files": [
     "dist/",

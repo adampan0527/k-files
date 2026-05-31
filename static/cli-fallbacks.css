@@ -30,3 +30,10 @@
   --vscode-badge-background: #4d4d4d;
   --vscode-badge-foreground: #ffffff;
 }
+
+.ohlc-file-item {
+  margin-left: auto;
+  font-style: italic;
+  opacity: 0.75;
+  font-size: 10px;
+}
