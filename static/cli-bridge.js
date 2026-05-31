@@ -13,6 +13,11 @@
 
     ws.onopen = function () {
       console.log("[k-files] WebSocket connected");
+      // Send ready signal so the server sends the initial marketUpdate payload.
+      // Without this, market.js's "ready" postMessage may fire before the WS
+      // is open and be silently dropped, leaving the page blank until the user
+      // toggles US/A (which triggers another broadcastUpdate).
+      ws.send(JSON.stringify({ type: "ready" }));
     };
 
     ws.onmessage = function (event) {

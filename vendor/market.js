@@ -3,7 +3,7 @@
 
   const BASE_TIME = 1704067200;
 
-  /** 从 CSS 变量读取，保证 K 线填充/边框/影线与侧栏箭头色号一致 */
+  /** Read CSS variables for K-line colors */
   function getKfilesColors() {
     const root = getComputedStyle(document.documentElement);
     const up = root.getPropertyValue("--kfiles-up").trim();
@@ -38,6 +38,7 @@
   const metaByTime = new Map();
   let lastCandles = [];
   let lastSelectedFile = null;
+  let lastSelectedFolder = null;
   let lastRenderedFile = null;
   let lastSeriesLength = 0;
   let lastSymbols = [];
@@ -49,6 +50,9 @@
   let toneSwitchBound = false;
   let symbolListBound = false;
   let userAdjustedViewport = false;
+
+  /* ---- File tree state ---- */
+  let fileTree = null;
 
   const SCHEME_LEGEND = { cn: "红涨绿跌", us: "绿涨红跌" };
 
@@ -102,8 +106,9 @@
     if (els.chartLegend) {
       els.chartLegend.textContent = legendText();
     }
-    if (changed && candleSeries && lastCandles.length && lastRenderedFile) {
-      renderChart(lastRenderedFile, lastCandles, { preserveViewport: true });
+    const activeKey = lastSelectedFile || lastSelectedFolder;
+    if (changed && candleSeries && lastCandles.length && activeKey) {
+      renderChart(activeKey, lastCandles, { preserveViewport: true });
     } else if (candleSeries) {
       candleSeries.applyOptions(candlestickSeriesOptions(getKfilesColors()));
     }
@@ -141,6 +146,79 @@
     });
   }
 
+  /* ---- File tree builder ---- */
+
+  function buildFileTree(symbols) {
+    const root = { name: "", path: "", children: [], files: [] };
+
+    for (const sym of symbols) {
+      const parts = sym.file.split("/");
+      let current = root;
+
+      for (let i = 0; i < parts.length - 1; i++) {
+        let child = current.children.find((c) => c.name === parts[i]);
+        if (!child) {
+          child = {
+            name: parts[i],
+            path: parts.slice(0, i + 1).join("/"),
+            children: [],
+            files: [],
+          };
+          current.children.push(child);
+        }
+        current = child;
+      }
+
+      current.files.push(sym);
+    }
+
+    return root;
+  }
+
+  function collectAllFiles(node) {
+    let result = [].concat(node.files);
+    for (const child of node.children) {
+      result = result.concat(collectAllFiles(child));
+    }
+    return result;
+  }
+
+  function findNodeByPath(node, path) {
+    if (node.path === path) return node;
+    for (const child of node.children) {
+      const found = findNodeByPath(child, path);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function collectExpandStates(node, map) {
+    if (node.path !== "" && node._expanded) {
+      map.set(node.path, true);
+    }
+    for (const child of node.children) {
+      collectExpandStates(child, map);
+    }
+  }
+
+  function applyExpandStates(node, map) {
+    if (map.has(node.path)) {
+      node._expanded = true;
+    }
+    for (const child of node.children) {
+      applyExpandStates(child, map);
+    }
+  }
+
+  function symbolItemFromEvent(event) {
+    const target = event.target;
+    const element =
+      target instanceof Element ? target : target?.parentElement ?? null;
+    return element?.closest?.(".symbol-item") ?? null;
+  }
+
+  /* ---- Bind symbol list (updated for tree) ---- */
+
   function bindSymbolList() {
     if (symbolListBound || !els.symbolList) {
       return;
@@ -153,12 +231,26 @@
         return;
       }
       const item = symbolItemFromEvent(event);
-      const file = item?.dataset?.file;
-      if (!file) {
+      if (!item) {
         return;
       }
-      event.preventDefault();
-      selectSymbol(file);
+
+      /* Toggle button? */
+      const isToggle = !!event.target.closest(".tree-toggle");
+      if (isToggle && item.dataset.folder != null) {
+        event.preventDefault();
+        toggleFolder(item.dataset.folder);
+        return;
+      }
+
+      /* Folder or file click */
+      if (item.dataset.folder != null) {
+        event.preventDefault();
+        selectFolder(item.dataset.folder);
+      } else if (item.dataset.file) {
+        event.preventDefault();
+        selectSymbol(item.dataset.file);
+      }
     });
 
     els.symbolList.addEventListener("keydown", (event) => {
@@ -166,25 +258,25 @@
         return;
       }
       const item = symbolItemFromEvent(event);
-      const file = item?.dataset?.file;
-      if (!file) {
+      if (!item) {
         return;
       }
-      event.preventDefault();
-      selectSymbol(file);
+      if (item.dataset.folder != null) {
+        event.preventDefault();
+        selectFolder(item.dataset.folder);
+      } else if (item.dataset.file) {
+        event.preventDefault();
+        selectSymbol(item.dataset.file);
+      }
     });
-  }
-
-  function symbolItemFromEvent(event) {
-    const target = event.target;
-    const element =
-      target instanceof Element ? target : target?.parentElement ?? null;
-    return element?.closest?.(".symbol-item") ?? null;
   }
 
   function selectSymbol(file) {
     lastSelectedFile = file;
-    renderSymbols(lastSymbols, file);
+    lastSelectedFolder = null;
+    const states = new Map();
+    if (fileTree) collectExpandStates(fileTree, states);
+    renderSymbols(lastSymbols, file, states);
 
     const cachedCandles = candlesByFile.get(file);
     if (cachedCandles) {
@@ -195,6 +287,55 @@
     }
 
     vscode.postMessage({ type: "selectSymbol", file });
+  }
+
+  function selectFolder(path) {
+    lastSelectedFolder = path;
+    lastSelectedFile = null;
+    const states = new Map();
+    if (fileTree) collectExpandStates(fileTree, states);
+    renderSymbols(lastSymbols, null, states);
+
+    /* Aggregate candles from all child files */
+    const node = fileTree ? findNodeByPath(fileTree, path) : null;
+    if (node) {
+      const allFiles = collectAllFiles(node);
+      const merged = [];
+      for (const sym of allFiles) {
+        const fileCandles = candlesByFile.get(sym.file);
+        if (fileCandles) {
+          for (const c of fileCandles) {
+            merged.push(c);
+          }
+        }
+      }
+      merged.sort(function (a, b) {
+        return (a.edit_index || 0) - (b.edit_index || 0);
+      });
+
+      const displayName = path || "项目";
+      if (merged.length) {
+        renderChart(displayName, merged);
+      } else {
+        els.chartTitle.textContent = displayName + "（聚合中…）";
+        updateOhlcBar(null);
+      }
+    } else {
+      const displayName = path || "项目";
+      els.chartTitle.textContent = displayName + "（聚合中…）";
+      updateOhlcBar(null);
+    }
+  }
+
+  function toggleFolder(path) {
+    if (!fileTree) return;
+    const node = findNodeByPath(fileTree, path);
+    if (node) {
+      node._expanded = !node._expanded;
+      const states = new Map();
+      collectExpandStates(fileTree, states);
+      renderSymbols(lastSymbols, lastSelectedFile, states);
+    }
   }
 
   function bindChartViewportInteractions() {
@@ -395,27 +536,28 @@
     };
   }
 
-  function renderChart(file, candles, options = {}) {
+  function renderChart(key, candles, options = {}) {
     lastCandles = candles ?? [];
     const previousFile = lastRenderedFile;
-    const delisted =
-      file &&
+    const isFolderView = !candlesByFile.has(key);
+    const delisted = !isFolderView &&
       normalizeSymbols(lastSymbols).some(
-        (s) => s.file === file && s.is_delisted
+        (s) => s.file === key && s.is_delisted
       );
-    els.chartTitle.textContent = file
-      ? file +
+
+    els.chartTitle.textContent = key
+      ? key +
         (delisted ? " · ST退市" : "") +
         "（" + lastCandles.length + " 根 K 线）"
       : "选择一只股票";
 
-    if (!file || !lastCandles.length) {
+    if (!key || !lastCandles.length) {
       if (candleSeries) {
         candleSeries.setData([]);
         volumeSeries?.setData([]);
       }
       updateOhlcBar(null);
-      lastRenderedFile = file ?? null;
+      lastRenderedFile = key ?? null;
       lastSeriesLength = 0;
       return;
     }
@@ -438,7 +580,7 @@
       };
     });
 
-    const sameFile = file === previousFile;
+    const sameFile = key === previousFile;
     const previousRange = sameFile
       ? chart.timeScale().getVisibleLogicalRange()
       : null;
@@ -460,7 +602,7 @@
       chart.timeScale().fitContent();
     }
     resizeChart();
-    lastRenderedFile = file;
+    lastRenderedFile = key;
     lastSeriesLength = series.length;
     if (!sameFile) {
       userAdjustedViewport = false;
@@ -494,46 +636,118 @@
     }));
   }
 
-  function renderSymbols(symbols, activeFile) {
+  /* ---- Tree rendering ---- */
+
+  function renderSymbols(symbols, activeFile, expandStates) {
     const list = normalizeSymbols(symbols);
     els.symbolList.innerHTML = "";
     els.symbolCount.textContent = String(list.length);
     els.emptyHint.classList.toggle("hidden", list.length > 0);
 
-    for (const s of list) {
-      const li = document.createElement("li");
-      li.className = "symbol-item";
-      li.dataset.file = s.file;
-      li.tabIndex = 0;
-      if (s.file === activeFile) {
-        li.classList.add("active");
-      }
-      if (s.is_delisted) {
-        li.classList.add("delisted");
-      } else if (s.is_new) {
-        li.classList.add("ipo");
-      } else if (s.is_recent) {
-        li.classList.add("recent-edit");
-      }
-      li.innerHTML =
-        trendArrowMarkup(s.is_delisted ? null : s.last_trend) +
-        '<div class="symbol-body">' +
-        '<div class="symbol-name">' +
-        escapeHtml(shortName(s.file)) +
-        (s.is_delisted
-          ? '<span class="badge-activity badge-delisted">ST退市</span>'
-          : "") +
-        (s.is_new ? '<span class="badge-activity badge-new">新</span>' : "") +
-        (s.is_recent ? '<span class="badge-activity badge-recent">改</span>' : "") +
-        "</div><div class=\"symbol-meta\">" +
-        s.edit_count +
-        " 笔 · " +
-        s.last_lines +
-        " 行 · 净" +
-        formatNet(s.total_net) +
-        "</div></div>";
-      els.symbolList.appendChild(li);
+    fileTree = buildFileTree(list);
+
+    /* Root expanded by default, children collapsed unless in expandStates */
+    fileTree._expanded = true;
+    if (expandStates) {
+      applyExpandStates(fileTree, expandStates);
     }
+
+    renderTreeNode(fileTree, els.symbolList, 0, activeFile);
+  }
+
+  function renderTreeNode(node, parentUl, depth, activeFile) {
+    const isRoot = depth === 0 && node.path === "";
+    const li = document.createElement("li");
+    li.className = "symbol-item tree-folder";
+    li.dataset.folder = node.path;
+    li.tabIndex = 0;
+    li.style.paddingLeft = (6 + depth * 12) + "px";
+
+    const isActiveFolder = lastSelectedFolder === node.path;
+    if (isActiveFolder) {
+      li.classList.add("active");
+    }
+
+    /* Aggregate stats */
+    const allFiles = collectAllFiles(node);
+    const totalEditCount = allFiles.reduce(function (sum, s) {
+      return sum + (s.edit_count || 0);
+    }, 0);
+    const totalNet = allFiles.reduce(function (sum, s) {
+      return sum + (s.total_net || 0);
+    }, 0);
+
+    const toggleChar = node._expanded ? "\u25BC" : "\u25B6";
+    const displayName = isRoot
+      ? (node.name || "项目")
+      : node.name;
+
+    li.innerHTML =
+      '<span class="tree-toggle">' + toggleChar + '</span>' +
+      '<div class="symbol-body">' +
+        '<div class="symbol-name">' +
+          escapeHtml(displayName) +
+        '</div>' +
+        '<div class="symbol-meta">' +
+          totalEditCount + ' 笔 · 净' + formatNet(totalNet) +
+        '</div>' +
+      '</div>';
+
+    parentUl.appendChild(li);
+
+    /* Render children when expanded */
+    if (node._expanded) {
+      /* Folders first */
+      for (const child of node.children) {
+        renderTreeNode(child, parentUl, depth + 1, activeFile);
+      }
+
+      /* Then files */
+      for (const s of node.files) {
+        renderFileNode(s, parentUl, depth + 1, activeFile);
+      }
+    }
+  }
+
+  function renderFileNode(s, parentUl, depth, activeFile) {
+    const li = document.createElement("li");
+    li.className = "symbol-item tree-file";
+    li.dataset.file = s.file;
+    li.tabIndex = 0;
+    li.style.paddingLeft = (6 + depth * 12) + "px";
+
+    if (s.file === activeFile && !lastSelectedFolder) {
+      li.classList.add("active");
+    }
+    if (s.is_delisted) {
+      li.classList.add("delisted");
+    } else if (s.is_new) {
+      li.classList.add("ipo");
+    } else if (s.is_recent) {
+      li.classList.add("recent-edit");
+    }
+
+    li.innerHTML =
+      trendArrowMarkup(s.is_delisted ? null : s.last_trend) +
+      '<div class="symbol-body">' +
+        '<div class="symbol-name">' +
+          escapeHtml(s.file.split("/").pop()) +
+          (s.is_delisted
+            ? '<span class="badge-activity badge-delisted">ST退市</span>'
+            : "") +
+          (s.is_new
+            ? '<span class="badge-activity badge-new">新</span>'
+            : "") +
+          (s.is_recent
+            ? '<span class="badge-activity badge-recent">改</span>'
+            : "") +
+        '</div>' +
+        '<div class="symbol-meta">' +
+          s.edit_count + ' 笔 · ' + s.last_lines + ' 行 · 净' + formatNet(s.total_net) +
+        '</div>' +
+      '</div>';
+
+    parentUl.appendChild(li);
   }
 
   function shortName(file) {
@@ -579,7 +793,11 @@
       return;
     }
     const payload = event.data.payload;
-    lastSelectedFile = payload.selectedFile ?? null;
+    // Don't reset lastSelectedFolder on marketUpdate
+    // Only set lastSelectedFile from payload if we're not in folder view
+    if (!lastSelectedFolder) {
+      lastSelectedFile = payload.selectedFile ?? null;
+    }
     Object.entries(payload.candles ?? {}).forEach(([file, candles]) => {
       candlesByFile.set(file, candles ?? []);
     });
@@ -590,12 +808,14 @@
     updateBanner(payload);
     lastMissingFiles = new Set(payload.missingFiles ?? []);
     lastSymbols = payload.symbols ?? [];
-    renderSymbols(lastSymbols, payload.selectedFile);
+    renderSymbols(lastSymbols, lastSelectedFolder ? null : payload.selectedFile);
     const selectedFile = payload.selectedFile;
     const selectedCandles =
       payload.candles?.[selectedFile] ?? candlesByFile.get(selectedFile);
     requestAnimationFrame(() => {
-      if (selectedFile === lastSelectedFile) {
+      if (lastSelectedFolder) {
+        selectFolder(lastSelectedFolder);
+      } else if (selectedFile === lastSelectedFile) {
         renderChart(selectedFile, selectedCandles);
       }
     });

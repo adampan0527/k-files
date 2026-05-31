@@ -186,8 +186,12 @@ export function buildMarketPayload(
       ? selectedFile
       : symbols[0]?.file ?? null;
 
-  if (active) {
-    candles[active] = buildCandlesForFile(events, active);
+  // Build candles for all files so folder views can aggregate
+  for (const file of files) {
+    const fileCandles = buildCandlesForFile(events, file);
+    if (fileCandles.length) {
+      candles[file] = fileCandles;
+    }
   }
 
   return { symbols, selectedFile: active, candles };
