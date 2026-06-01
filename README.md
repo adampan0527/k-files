@@ -7,13 +7,17 @@ k-files is a standalone CLI tool that watches your project directory for file ch
 ## Quick Start
 
 ```bash
-# Install globally
-npm install -g k-files
+# Clone and build
+git clone https://github.com/adampan0527/k-files.git
+cd k-files
+npm install
+npm run build
 
-# Navigate to your project
+# Link globally so `kfiles` command is available everywhere
+npm link
+
+# Navigate to your project and start
 cd my-project
-
-# Start watching and open the dashboard
 k-files
 ```
 

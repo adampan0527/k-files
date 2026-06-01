@@ -7,13 +7,17 @@ k-files 是一个独立的命令行工具，监听项目目录中的文件修改
 ## 快速开始
 
 ```bash
-# 全局安装
-npm install -g k-files
+# 克隆并构建
+git clone https://github.com/adampan0527/k-files.git
+cd k-files
+npm install
+npm run build
 
-# 进入项目目录
+# 全局链接，之后可在任意目录使用 kfiles 命令
+npm link
+
+# 进入项目目录并启动
 cd my-project
-
-# 启动监听并打开仪表盘
 k-files
 ```
 
